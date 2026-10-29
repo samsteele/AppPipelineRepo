@@ -48,3 +48,36 @@ git commit -am "New copy" && git tag v1.1.0 && git push origin main v1.1.0
 ```
 
 Pushing to `main` alone in a trigger repo does nothing.
+
+## More than five sources
+
+A CodeBuild action takes at most 5 input artifacts. `Render` uses 3
+(this repo plus two trigger repos), so it fits two more trigger repos.
+Past that, add a fan-in step:
+
+```
+Source    Collect (parallel)          Render                 Deploy
+  A ─┐
+  …  ├──▶ Collect1 ─▶ releases1 ─┐
+  E ─┘                           │
+  F ─┐                           ├──▶ Render ─▶ dist ─▶ Publish
+  …  ├──▶ Collect2 ─▶ releases2 ─┘      ▲
+  J ─┘                                  │
+  AppPipelineRepo ──────────────────────┘
+```
+
+- **Collect actions** each take up to 5 full-clone trigger repos and run
+  the `latestRelease` lookup, writing `{ repo, tag, copy }` records to a
+  small JSON artifact. Give them an inline buildspec
+  (`BuildSpec.fromObject`) so they don't need this repo as an input, which
+  frees all 5 slots for trigger repos. Run them in parallel in their own
+  stage, or in the Build stage with `runOrder: 1`.
+- **Render** takes this repo plus up to 4 Collect artifacts and reads the
+  JSON from `$CODEBUILD_SRC_DIR_<artifact>`, so it no longer runs git
+  itself. Only Collect actions need `codeBuildCloneOutput`.
+- **Capacity** at two levels is 4 × 5 = 20 trigger repos. Beyond that, add
+  another Collect level, or merge JSON before Render.
+- Artifact names must be unique across the pipeline, because they become the
+  `CODEBUILD_SRC_DIR_*` variable names.
+- Triggers don't change. Each trigger repo still has its own source action
+  and `v*` tag filter.

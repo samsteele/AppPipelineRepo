@@ -59,6 +59,7 @@ export class PipelineStack extends Stack {
         environment: { buildImage: codebuild.LinuxBuildImage.STANDARD_7_0 },
       }),
       input: app.output,
+      // At most 5 inputs in all. See "More than five sources" in the README.
       extraInputs: [repoA.output, repoB.output],
       outputs: [dist],
     });
