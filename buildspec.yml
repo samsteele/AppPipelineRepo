@@ -1,0 +1,16 @@
+version: 0.2
+
+# The trigger repos arrive as full git clones (CODEBUILD_CLONE_REF), mounted at
+# $CODEBUILD_SRC_DIR_TriggerRepoA and $CODEBUILD_SRC_DIR_TriggerRepoB.
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+  build:
+    commands:
+      - node render.mjs
+
+artifacts:
+  base-directory: dist
+  files:
+    - '**/*'
