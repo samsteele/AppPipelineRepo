@@ -5,7 +5,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 20
+      nodejs: 26
   build:
     commands:
       - node render.mjs
